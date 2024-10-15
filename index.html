@@ -1,515 +1,559 @@
-<!DOCTYPE html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width, initial-scale=1.0"><title>Federalism Index Project Map</title><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css><script src=https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js></script><script src=https://unpkg.com/@turf/turf@6/turf.min.js></script><link rel=stylesheet href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"><link rel=stylesheet href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"><style>
-        body,
-        html {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            background-color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        #map {
-            height: 650px;
-            background-color: white;
-            position: relative;
-        }
-
-        .button {
-            position: absolute;
-            z-index: 1000;
-            background: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            color: #0c2d48;
-            font-size: 20px;
-            padding: 8px;
-            cursor: pointer;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s ease, color 0.3s ease;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .button:hover {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .button:focus {
-            outline: none;
-        }
-
-        #basemapButton {
-            top: 500px;
-            left: 10px;
-        }
-
-        #homeButton {
-            top: 450px;
-            left: 10px;
-        }
-
-        #stateSelect {
-            top: 12px;
-            right: 10px;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            background: #ffffff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            color: #0c2d48;
-        }
-
-        #stateSelect option {
-            background: #ffffff;
-            color: #0c2d48;
-        }
-
-        #stateSelect:hover {
-            color: #0c2d48;
-        }
-
-        #infoPanel {
-            position: absolute;
-            padding: 10px;
-            background: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: none;
-            font-size: 16px;
-            font-weight: 600;
-            color: #0c2d48;
-            text-align: center;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-
-        #legend {
-            position: absolute;
-            top: 500px;
-            right: 10px;
-            background: white;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            font-size: 14px;
-            color: #0c2d48;
-            z-index: 1000;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 5px;
-            color: #0c2d48;
-        }
-
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-
-        #legislatorPanel {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 400px;
-            max-height: 600px;
-            overflow-y: auto;
-            background: white;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            display: none;
-            font-size: 15px;
-            color: #2a6b37;
-        }
-
-        #legislatorPanel h3 {
-            margin-top: 0;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .close-button {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #0c2d48;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            transition: background-color 0.3s ease;
-        }
-
-        .close-button:hover {
-            background-color: rgba(0, 0, 0, 0.1);
-        }
-
-        .info-item {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            display: grid;
-            grid-template-columns: 100px 1fr;
-            gap: 5px 10px;
-            /* 5px vertical gap, 10px horizontal gap */
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .info-item label {
-            font-weight: bold;
-            grid-column: 1;
-            align-self: start;
-            /* Align to the top in case of multi-line content */
-        }
-
-        .info-content {
-            grid-column: 2;
-            word-wrap: break-word;
-            /* Allows long words to break */
-            overflow-wrap: break-word;
-        }
-
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-
-        .section-title {
-            display: flex;
-            align-items: center;
-        }
-
-        .section-logo {
-            width: 30px;
-            height: 30px;
-            margin-right: 10px;
-        }
-
-        .section-header h4 {
-            margin: 0;
-        }
-
-        .section-content {
-            display: block;
-            transition: max-height 0.3s ease-out;
-            overflow: hidden;
-        }
-
-        .section-content.collapsed {
-            max-height: 0;
-        }
-
-        .chevron {
-            transition: transform 0.3s ease-out;
-        }
-
-        .chevron.up {
-            transform: rotate(180deg);
-        }
-
-        #searchWidget {
-            position: absolute;
-            top: 12px;
-            left: 50px;
-            z-index: 1000;
-            width: 300px;
-        }
-
-        .search-container {
-            display: flex;
-            align-items: center;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        #legislatorSearch {
-            flex-grow: 1;
-            padding: 10px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            outline: none;
-        }
-
-        .search-icon {
-            padding: 10px;
-            color: #0c2d48;
-            cursor: pointer;
-        }
-
-        #searchResults {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: white;
-            border-radius: 0 0 5px 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-
-        .search-category {
-            font-weight: bold;
-            padding: 5px;
-            background-color: #f0f0f0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        .search-result-item {
-
-            padding: 12px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-        }
-
-        .search-result-item:last-child {
-            border-bottom: none;
-        }
-
-        .search-result-item:hover {
-            background-color: #f0f0f0;
-        }
-
-        .reset-button {
-            position: absolute;
-            z-index: 1000;
-            /*top: 450px;*/
-            top: 500px;
-            left: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            background-color: #ffffff;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 14px;
-            color: #0c2d48;
-            cursor: pointer;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .reset-button:hover {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .reset-button .icon {
-            font-size: 20px;
-        }
-
-        .gps-icon {
-            color: #0c2d48;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 60px;
-        }
-
-        .state-website {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .state-website .material-symbols-outlined {
-            margin-right: 5px;
-        }
-
-        .state-website a {
-            color: #0066cc;
-            text-decoration: none;
-        }
-
-        .state-website a:hover {
-            text-decoration: underline;
-        }
-
-        .committee-section {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-        }
-
-        .committee-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .committee-header h5 {
-            margin: 0;
-            margin-left: 10px;
-            font-size: 16px;
-            /* Increased font size */
-            /*text-decoration: underline;  /* Added underline */
-            font-weight: bold;
-            /* Optional: make it bold for more emphasis */
-        }
-
-        .info-icon {
-            color: #0c2d48;
-            cursor: help;
-            font-size: 20px;
-        }
-
-        .committee-description {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-            padding-left: 30px;
-            text-align: justify;
-        }
-
-        .info-item {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-            display: grid;
-            grid-template-columns: 100px 1fr;
-            gap: 5px 10px;
-            text-align: justify;
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .info-item label {
-            font-weight: bold;
-            grid-column: 1;
-            align-self: start;
-        }
-
-        .info-content {
-            grid-column: 2;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        #legislatorPanel {
-            text-align: justify;
-        }
-
-        #legislatorPanel h3,
-        .info-item label {
-            text-align: left;
-        }
-
-        .committee-website {
-            margin-bottom: 10px;
-        }
-
-        .committee-website a {
-            color: #0066cc;
-            text-decoration: none;
-        }
-
-        .committee-website a:hover {
-            text-decoration: underline;
-        }
-
-        .party-pill {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: bold;
-            color: white;
-            margin-left: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .red-pill {
-            background-color: #FF0000;
-            /* Republican Red */
-        }
-
-        .blue-pill {
-            background-color: #0055A4;
-            /* Democratic Blue */
-        }
-
-        .committee-website-button {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 10px;
-            background-color: #f0f0f0;
-            color: #333;
-            text-decoration: none !important;
-            border-radius: 20px;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .committee-website-button:hover,
-        .committee-website-button:focus,
-        .committee-website-button:active {
-            background-color: #28a745;
-            color: white;
-            text-decoration: none !important;
-        }
-
-        .committee-website-button .material-symbols-outlined {
-            margin-right: 8px;
-            text-decoration: none !important;
-        }
-
-        /* Additional rule to ensure no underline on any child elements */
-        .committee-website-button * {
-            text-decoration: none !important;
-        }
-
-        .chair-icon {
-            font-size: 18px;
-            vertical-align: middle;
-            margin-right: 5px;
-            color: #2a6b37;
-            /* You can adjust this color to match your design */
-        }
-    </style></head><body><div id=map></div><button id=resetButton class=reset-button><span class=icon>&#x21bb;</span><span class=text>Reset</span></button><select id=stateSelect class=button><option value>Select a State...</option></select><div id=infoPanel></div><div id=legend><div class=legend-item><div class=legend-color style="background-color: #28a745;"></div> Featured States </div><div class=legend-item><div class=legend-color style="background-color: #c3e0e5;"></div> States with No Data </div></div><div id=legislatorPanel><button id=closePanelButton class=close-button><span class=material-icons-outlined>close</span></button></div><div id=searchWidget><div class=search-container><input type=text id=legislatorSearch placeholder="Search for a State or a Legislator"><span class="material-icons-outlined search-icon">search</span></div><div id=searchResults></div></div><script src=data.js></script><script src=map.js></script><script>
-
-
-    </script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Federalism Index Project Map</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    <style>
+body,
+html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+#map {
+    height: 650px;
+    background-color: white;
+    position: relative;
+}
+
+.button {
+    position: absolute;
+    z-index: 1000;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    color: #0c2d48;
+    font-size: 20px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button:hover {
+    background-color: #28a745;
+    color: white;
+}
+
+.button:focus {
+    outline: none;
+}
+
+#basemapButton {
+    top: 500px;
+    left: 10px;
+}
+
+#homeButton {
+    top: 450px;
+    left: 10px;
+}
+
+#stateSelect {
+    top: 12px;
+    right: 10px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background: #ffffff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color: #0c2d48;
+}
+
+#stateSelect option {
+    background: #ffffff;
+    color: #0c2d48;
+}
+
+#stateSelect:hover {
+    color: #0c2d48;
+}
+
+#infoPanel {
+    position: absolute;
+    padding: 10px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: none;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0c2d48;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#legend {
+    position: absolute;
+    top: 500px;
+    right: 10px;
+    background: white;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    color: #0c2d48;
+    z-index: 1000;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    color: #0c2d48;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    margin-right: 10px;
+}
+
+#legislatorPanel {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 400px;
+    max-height: 600px;
+    overflow-y: auto;
+    background: white;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    display: none;
+    font-size: 15px;
+    color: #2a6b37;
+}
+
+#legislatorPanel h3 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #0c2d48;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+.close-button:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.info-item {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 5px 10px;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.info-item label {
+    font-weight: bold;
+    grid-column: 1;
+    align-self: start;
+}
+
+.info-content {
+    grid-column: 2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+}
+
+.section-logo {
+    width: 30px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+.section-header h4 {
+    margin: 0;
+}
+
+.section-content {
+    display: block;
+    transition: max-height 0.3s ease-out;
+    overflow: hidden;
+}
+
+.section-content.collapsed {
+    max-height: 0;
+}
+
+.chevron {
+    transition: transform 0.3s ease-out;
+}
+
+.chevron.up {
+    transform: rotate(180deg);
+}
+
+#searchWidget {
+    position: absolute;
+    top: 12px;
+    left: 50px;
+    z-index: 1000;
+    width: 300px;
+}
+
+.search-container {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#legislatorSearch {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    outline: none;
+}
+
+.search-icon {
+    padding: 10px;
+    color: #0c2d48;
+    cursor: pointer;
+}
+
+#searchResults {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border-radius: 0 0 5px 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+.search-category {
+    font-weight: bold;
+    padding: 5px;
+    background-color: #f0f0f0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.search-result-item {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background-color: #f0f0f0;
+}
+
+.reset-button {
+    position: absolute;
+    z-index: 1000;
+    top: 500px;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    color: #0c2d48;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.reset-button:hover {
+    background-color: #28a745;
+    color: white;
+}
+
+.reset-button .icon {
+    font-size: 20px;
+}
+
+.gps-icon {
+    color: #0c2d48;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+}
+
+.state-website {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.state-website .material-symbols-outlined {
+    margin-right: 5px;
+}
+
+.state-website a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.state-website a:hover {
+    text-decoration: underline;
+}
+
+.committee-section {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+}
+
+.committee-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.committee-header h5 {
+    margin: 0;
+    margin-left: 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.info-icon {
+    color: #0c2d48;
+    cursor: help;
+    font-size: 20px;
+}
+
+.committee-description {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+    padding-left: 30px;
+    text-align: justify;
+}
+
+.info-item {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 5px 10px;
+    text-align: justify;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.info-item label {
+    font-weight: bold;
+    grid-column: 1;
+    align-self: start;
+}
+
+.info-content {
+    grid-column: 2;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+#legislatorPanel {
+    text-align: justify;
+}
+
+#legislatorPanel h3,
+.info-item label {
+    text-align: left;
+}
+
+.committee-website {
+    margin-bottom: 10px;
+}
+
+.committee-website a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+.committee-website a:hover {
+    text-decoration: underline;
+}
+
+.party-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: white;
+    margin-left: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.red-pill {
+    background-color: #FF0000;
+}
+
+.blue-pill {
+    background-color: #0055A4;
+}
+
+.committee-website-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background-color: #f0f0f0;
+    color: #333;
+    text-decoration: none !important;
+    border-radius: 20px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.committee-website-button:hover,
+.committee-website-button:focus,
+.committee-website-button:active {
+    background-color: #28a745;
+    color: white;
+    text-decoration: none !important;
+}
+
+.committee-website-button .material-symbols-outlined {
+    margin-right: 8px;
+    text-decoration: none !important;
+}
+
+.committee-website-button * {
+    text-decoration: none !important;
+}
+
+.chair-icon {
+    font-size: 18px;
+    vertical-align: middle;
+    margin-right: 5px;
+    color: #2a6b37;
+}
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <button id="resetButton" class="reset-button">
+        <span class="icon">&#x21bb;</span>
+        <span class="text">Reset</span>
+    </button>
+    <select id="stateSelect" class="button">
+        <option value="">Select a State...</option>
+    </select>
+    <div id="infoPanel"></div>
+    <div id="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #28a745;"></div>
+            Featured States
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: #c3e0e5;"></div>
+            States with No Data
+        </div>
+    </div>
+    <div id="legislatorPanel">
+        <button id="closePanelButton" class="close-button">
+            <span class="material-icons-outlined">close</span>
+        </button>
+    </div>
+    <div id="searchWidget">
+        <div class="search-container">
+            <input type="text" id="legislatorSearch" placeholder="Search for a State or a Legislator">
+            <span class="material-icons-outlined search-icon">search</span>
+        </div>
+        <div id="searchResults"></div>
+    </div>
+    <script src="data.js"></script>
+    <script src="map.js"></script>
+    <script src="dropdown.js"></script>
+    <script src="infopanel.js"></script>
+    <script src="reset.js"></script>
+    <script src="search.js"></script>
+
+    <script>
+    </script>
+</body>
+
+</html>
